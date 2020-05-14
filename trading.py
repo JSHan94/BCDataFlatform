@@ -2,14 +2,13 @@ from web3 import Web3
 import time
 from web3.logs import DISCARD
 
-
 class Contract:
 
     # set buyer, uploader 
     def __init__(self,buyer, uploader,buyerKey,uploaderKey):
-        #"https://ropsten.infura.io/v3/5f5c1d6d2baf41509d5499dac0041758" 
+        #infura_url = "https://ropsten.infura.io/v3/5f5c1d6d2baf41509d5499dac0041758" 
         infura_url = "wss://ropsten.infura.io/ws/v3/5f5c1d6d2baf41509d5499dac0041758" 
-        
+
         self.contract_add = "0xc5bfff9413E0C87a3E31B4AD829E9E205C29f5b2"
 
         self.buyer = buyer
@@ -23,8 +22,9 @@ class Contract:
         self.w3 = Web3(Web3.WebsocketProvider(infura_url))
         self.contract = self.w3.eth.contract(address=self.contract_add,abi=contract_abi)
 
-    
-        
+    def getBlock(self):
+        return self.w3.eth.getBlock('latest')
+
     # upload file
     def uploadFile(self, category, fileName, dataHash, price):
         print("Upload File - category : {}, fileName : {}, dataHash : {}, price : {}".format(category,fileName,dataHash,price))
@@ -33,8 +33,12 @@ class Contract:
         return
 
     # get balance
-    def getBalance(self, user, blocknum):
-        print(self.contract.balanceOf(user))
+    def getBalance(self, user):
+        print("Get Balance - user : {}, blocknum : {} ".format(user))
+
+        #tx = self.contract.functions.Balance(token).buildTransaction({'nonce': self.w3.eth.getTransactionCount(user), 'gas': 999999}) 
+        #self.signTx(tx, self.PK[user])
+
         return
 
     # get coin from Contract
@@ -68,7 +72,7 @@ class Contract:
     def getFileInformation(self,dataHash):
         print("Get File Information - file hash : {}".format(dataHash))
 
-        tx = self.contract.functions.buy(dataHash).buildTransaction({'nonce': self.w3.eth.getTransactionCount(self.buyer), 'gas': 999999})
+        tx = self.contract.functions.getData(dataHash).buildTransaction({'nonce': self.w3.eth.getTransactionCount(self.buyer), 'gas': 999999})
         self.signTx(tx, self.buyerPk)
 
         return
@@ -114,10 +118,46 @@ if __name__ == "__main__":
     uploaderKey = "14F5CEE6EE9209B4D491F18C8F11F6D1C3579218C849959D50897EF517D9D7BB"
 
     trading = Contract(buyer,uploader,buyerKey,uploaderKey)
+    #print(trading.getBlock()["number"])
+    #trading.checkEvent(7893667)
+
+    while True:
+        curBlock = trading.getBlock()["number"]
+        print("************************************")
+        print("current block : ", curBlock )
+        print("buyer address : ",buyer)
+        print("uploader address : ",uploader)
+        print("Select a function you want to call!")
+        print("1. getToken() : get token from Contract")
+        print("2. uploadFile() : upload file")
+        print("3. getFileInformation() : get file infromation with data hash")
+        print("4. buyFile() : buy file with data hash")
+        print("5. checkEvent() : check all event list")
+        print("************************************")
+        select =  int(input("function num : "))
+        user = input("msg.sender address : ")
         
+        if select == 1:
+            token = int(input("how many token you want? : "))
+            trading.getToken(user,token)
+        elif select == 2:
+            category = input("category : ")
+            filename = input("file name : ")
+            datahash = int(input("datahash : "))
+            price = int(input("price : "))
+            trading.uploadFile(category,filename,datahash,price)
+        elif select == 3:
+            datahash = int(input("datahash : " ))
+            trading.getFileInformation(datahash)
+        elif select == 4:
+            datahash = int(input("datahash : " ))
+            trading.buyFile(datahash)
+        elif select == 5:
+            blocknum = int(input("fiter start blocknum : "))
+            trading.checkEvent(blocknum)
 
     # log check
-    trading.checkEvent(7893667)
+    #trading.checkEvent(7893667)
 
     # function call
     #trading.getToken(buyer,10)
@@ -125,6 +165,5 @@ if __name__ == "__main__":
     #trading.getFileInformation(123)
     #trading.buyFile(123)
     #trading.getFileInformation(123)
-
 
 
